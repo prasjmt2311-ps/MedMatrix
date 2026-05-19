@@ -24,6 +24,14 @@ const transferRequestSchema = new mongoose.Schema({
     phone: { type: String, default: '' },
   },
 
+  // Transfer Reason (NEW)
+  transferReason: {
+    type: String,
+    enum: ['icu_unavailable', 'specialist_unavailable', 'emergency_overload', 'surgery_requirement', 'equipment_unavailable', 'bed_shortage', 'other'],
+    default: 'other',
+  },
+  transferReasonDetail: { type: String, default: '' },
+
   // Transfer Details
   priority: {
     type: String,
@@ -32,12 +40,36 @@ const transferRequestSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'in-transit', 'completed', 'cancelled'],
+    enum: ['pending', 'approved', 'rejected', 'in-transit', 'completed', 'cancelled', 'info-requested'],
     default: 'pending',
   },
   requiresICU: { type: Boolean, default: false },
   requiresAmbulance: { type: Boolean, default: true },
   specialistNeeded: { type: String, default: '' },
+
+  // Vitals (NEW)
+  vitals: {
+    bp: { type: String, default: '' },
+    heartRate: { type: String, default: '' },
+    spo2: { type: String, default: '' },
+    temperature: { type: String, default: '' },
+    respiratoryRate: { type: String, default: '' },
+  },
+
+  // DigiLocker Integration (NEW)
+  digilocker: {
+    synced: { type: Boolean, default: false },
+    syncedAt: { type: Date, default: null },
+    documentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MedicalRecord' }],
+  },
+
+  // Info Request (NEW)
+  infoRequest: {
+    message: { type: String, default: '' },
+    requestedAt: { type: Date, default: null },
+    response: { type: String, default: '' },
+    respondedAt: { type: Date, default: null },
+  },
 
   // AI Recommendation
   aiRecommendation: {

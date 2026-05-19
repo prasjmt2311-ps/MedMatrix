@@ -1,11 +1,16 @@
 const router = require('express').Router();
 const {
-  sendSOS, getActiveAlerts,
-  acknowledgeAlert, resolveAlert, getMyAlerts
+  sendSOS, getActiveAlerts, acknowledgeAlert,
+  resolveAlert, getMyAlerts, getNearbyHospitals,
+  getRegisteredHospitals,
 } = require('../controllers/sosController');
 const { protect, restrictTo } = require('../middleware/authMiddleware');
 
-// Send SOS — works for both logged in and anonymous
+// ✅ Public routes — no auth needed
+router.get('/nearby-hospitals', getNearbyHospitals);
+router.get('/registered-hospitals', getRegisteredHospitals);
+
+// Send SOS — works for logged in and anonymous
 router.post('/send', (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {

@@ -29,7 +29,7 @@ export default function EmergencyAlerts() {
 
   // ✅ NEW — Real-time SOS monitoring
   useEffect(() => {
-    const socket = io('http://localhost:5000');
+    const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
     socket.on('connect', () => {
       socket.emit('join-hospital-monitor', { hospitalId: 'hospital' });

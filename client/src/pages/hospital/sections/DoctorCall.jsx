@@ -5,7 +5,7 @@ import { Video, VideoOff, Mic, MicOff, Phone, Copy, CheckCircle, Users } from 'l
 import { useAuth } from '../../../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -31,35 +31,160 @@ export default function DoctorCall() {
   const localStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const timerRef = useRef(null);
+  const iceCandidateBuffer = useRef([]);
 
   const generateRoomId = () => 'UC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 
+  // Re-attach local stream to video element whenever stage changes (waiting/call use different video refs)
+  useEffect(() => {
+    if (localStreamRef.current && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [stage]);
+
   const startLocalStream = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localStreamRef.current = stream;
-    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-    return stream;
+    try {
+      console.log('[DoctorCall] Requesting camera/mic access...');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      console.log('[DoctorCall] ✅ Local stream acquired:', stream.getTracks().map(t => t.kind + ':' + t.label));
+      return stream;
+    } catch (err) {
+      console.error('[DoctorCall] ❌ getUserMedia failed:', err);
+      toast.error('Camera/mic access denied. Please allow permissions.');
+      throw err;
+    }
   };
 
   const createPeerConnection = useCallback((targetSocketId) => {
+    console.log('[DoctorCall] Creating PeerConnection for target:', targetSocketId);
+
+    // Close any existing peer connection
+    if (peerConnectionRef.current) {
+      console.log('[DoctorCall] Closing existing PeerConnection');
+      peerConnectionRef.current.close();
+    }
+
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
+    iceCandidateBuffer.current = [];
+
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current));
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current);
+        console.log('[DoctorCall] Added local track:', track.kind);
+      });
+    } else {
+      console.warn('[DoctorCall] ⚠️ No local stream when creating peer connection!');
     }
+
     pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
+      console.log('[DoctorCall] ✅ ontrack fired - remote stream received!', event.streams[0]?.id);
+      if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
         setRemoteStream(true);
       }
     };
+
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
+        console.log('[DoctorCall] 🧊 Sending ICE candidate to:', targetSocketId);
         socketRef.current.emit('ice-candidate', { to: targetSocketId, candidate: event.candidate });
       }
     };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('[DoctorCall] ICE connection state:', pc.iceConnectionState);
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log('[DoctorCall] Connection state:', pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        toast.success('Call connected!');
+      } else if (pc.connectionState === 'failed') {
+        console.error('[DoctorCall] ❌ Peer connection failed');
+        toast.error('Connection failed. Please try again.');
+      }
+    };
+
+    pc.onsignalingstatechange = () => {
+      console.log('[DoctorCall] Signaling state:', pc.signalingState);
+    };
+
     return pc;
   }, []);
+
+  const flushIceCandidates = async () => {
+    const pc = peerConnectionRef.current;
+    if (!pc || !pc.remoteDescription) return;
+    console.log(`[DoctorCall] Flushing ${iceCandidateBuffer.current.length} buffered ICE candidates`);
+    for (const candidate of iceCandidateBuffer.current) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.warn('[DoctorCall] Failed to add buffered ICE candidate:', e);
+      }
+    }
+    iceCandidateBuffer.current = [];
+  };
+
+  const setupSignaling = (socket) => {
+    socket.on('offer', async ({ from, offer }) => {
+      console.log('[DoctorCall] 📩 Received offer from:', from);
+      try {
+        const pc = createPeerConnection(from);
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('[DoctorCall] Remote description set (offer)');
+        await flushIceCandidates();
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        console.log('[DoctorCall] 📤 Sending answer to:', from);
+        socket.emit('answer', { to: from, answer });
+        setStage('call');
+        startTimer();
+      } catch (err) {
+        console.error('[DoctorCall] ❌ Error handling offer:', err);
+      }
+    });
+
+    socket.on('answer', async ({ from, answer }) => {
+      console.log('[DoctorCall] 📩 Received answer from:', from);
+      if (peerConnectionRef.current) {
+        try {
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+          console.log('[DoctorCall] Remote description set (answer)');
+          await flushIceCandidates();
+        } catch (err) {
+          console.error('[DoctorCall] ❌ Error setting answer:', err);
+        }
+      }
+    });
+
+    socket.on('ice-candidate', async ({ from, candidate }) => {
+      console.log('[DoctorCall] 🧊 Received ICE candidate from:', from);
+      if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('[DoctorCall] Failed to add ICE candidate:', e);
+        }
+      } else {
+        console.log('[DoctorCall] Buffering ICE candidate (no remote description yet)');
+        iceCandidateBuffer.current.push(candidate);
+      }
+    });
+
+    socket.on('call-ended', () => {
+      toast('Patient ended the call.');
+      endCall();
+    });
+
+    socket.on('user-left', () => {
+      toast('Patient left.');
+      setRemoteStream(false);
+    });
+  };
 
   const startRoom = async () => {
     const rid = generateRoomId();
@@ -67,24 +192,49 @@ export default function DoctorCall() {
     try {
       await startLocalStream();
       setStage('waiting');
-      socketRef.current = io(SOCKET_URL);
-      socketRef.current.on('connect', () => {
-        socketRef.current.emit('join-room', {
+
+      const socket = io(SOCKET_URL);
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('[DoctorCall] ✅ Socket connected:', socket.id);
+        socket.emit('join-room', {
           roomId: rid, userId: user?.id,
           userName: user?.name || 'Doctor', role: 'hospital',
         });
+        console.log('[DoctorCall] Emitted join-room for:', rid);
       });
-      socketRef.current.on('user-joined', async ({ socketId, userName }) => {
+
+      socket.on('connect_error', (err) => {
+        console.error('[DoctorCall] ❌ Socket connection error:', err.message);
+        toast.error('Failed to connect to server. Is it running?');
+      });
+
+      socket.on('user-joined', async ({ socketId, userName }) => {
+        console.log('[DoctorCall] 👤 User joined:', userName, '| socketId:', socketId);
         setPatientName(userName);
         setStage('call');
         startTimer();
-        const pc = createPeerConnection(socketId);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socketRef.current.emit('offer', { to: socketId, offer });
+        try {
+          const pc = createPeerConnection(socketId);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          console.log('[DoctorCall] 📤 Sending offer to:', socketId);
+          socket.emit('offer', { to: socketId, offer });
+        } catch (err) {
+          console.error('[DoctorCall] ❌ Error creating offer:', err);
+        }
       });
-      setupSignaling();
-    } catch { setStage('lobby'); }
+
+      socket.on('existing-users', (users) => {
+        console.log('[DoctorCall] Existing users in room:', users);
+      });
+
+      setupSignaling(socket);
+    } catch (err) {
+      console.error('[DoctorCall] ❌ startRoom failed:', err);
+      setStage('lobby');
+    }
   };
 
   const joinRoom = async () => {
@@ -95,53 +245,56 @@ export default function DoctorCall() {
       await startLocalStream();
       setStage('call');
       startTimer();
-      socketRef.current = io(SOCKET_URL);
-      socketRef.current.on('connect', () => {
-        socketRef.current.emit('join-room', {
+
+      const socket = io(SOCKET_URL);
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('[DoctorCall] ✅ Socket connected:', socket.id);
+        socket.emit('join-room', {
           roomId: rid, userId: user?.id,
           userName: user?.name || 'Doctor', role: 'hospital',
         });
+        console.log('[DoctorCall] Emitted join-room for:', rid);
       });
-      socketRef.current.on('existing-users', async (users) => {
+
+      socket.on('connect_error', (err) => {
+        console.error('[DoctorCall] ❌ Socket connection error:', err.message);
+        toast.error('Failed to connect to server. Is it running?');
+      });
+
+      socket.on('existing-users', async (users) => {
+        console.log('[DoctorCall] Existing users in room:', users);
         if (users.length > 0) {
           const target = users[0];
           setPatientName(target.userName);
-          const pc = createPeerConnection(target.socketId);
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socketRef.current.emit('offer', { to: target.socketId, offer });
+          try {
+            const pc = createPeerConnection(target.socketId);
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            console.log('[DoctorCall] 📤 Sending offer to existing user:', target.socketId);
+            socket.emit('offer', { to: target.socketId, offer });
+          } catch (err) {
+            console.error('[DoctorCall] ❌ Error creating offer for existing user:', err);
+          }
         }
       });
-      setupSignaling();
-    } catch { setStage('lobby'); }
-  };
 
-  const setupSignaling = () => {
-    socketRef.current.on('offer', async ({ from, offer }) => {
-      const pc = createPeerConnection(from);
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socketRef.current.emit('answer', { to: from, answer });
-      setStage('call');
-      startTimer();
-    });
-    socketRef.current.on('answer', async ({ answer }) => {
-      if (peerConnectionRef.current) {
-        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-      }
-    });
-    socketRef.current.on('ice-candidate', async ({ candidate }) => {
-      if (peerConnectionRef.current) {
-        try { await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
-      }
-    });
-    socketRef.current.on('call-ended', () => { toast('Patient ended the call.'); endCall(); });
-    socketRef.current.on('user-left', () => { toast('Patient left.'); setRemoteStream(false); });
+      socket.on('user-joined', async ({ socketId, userName }) => {
+        console.log('[DoctorCall] 👤 User joined:', userName, '| socketId:', socketId);
+        setPatientName(userName);
+      });
+
+      setupSignaling(socket);
+    } catch (err) {
+      console.error('[DoctorCall] ❌ joinRoom failed:', err);
+      setStage('lobby');
+    }
   };
 
   const startTimer = () => {
     setCallDuration(0);
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => setCallDuration(prev => prev + 1), 1000);
   };
 
@@ -152,6 +305,9 @@ export default function DoctorCall() {
     if (socketRef.current) { socketRef.current.emit('end-call', { roomId }); socketRef.current.disconnect(); }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    peerConnectionRef.current = null;
+    localStreamRef.current = null;
+    socketRef.current = null;
     setStage('lobby'); setRemoteStream(false); setCallDuration(0); setRoomId('');
   }, [roomId]);
 
@@ -181,6 +337,7 @@ export default function DoctorCall() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop());
+      if (peerConnectionRef.current) peerConnectionRef.current.close();
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
@@ -201,6 +358,7 @@ export default function DoctorCall() {
           <p className="text-slate-400 text-sm mb-4">Enter the room code from the patient.</p>
           <div className="flex gap-3">
             <input value={inputRoom} onChange={e => setInputRoom(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && joinRoom()}
               placeholder="Enter room code"
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-violet-500/50 uppercase" />
             <button onClick={joinRoom}

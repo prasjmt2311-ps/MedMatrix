@@ -5,14 +5,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach token to every request automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('uc_token');
   if (token) config.headers.Authorization = 'Bearer ' + token;
   return config;
 });
 
-// Handle 401 globally
 api.interceptors.response.use(
   (res) => res,
   (err) => {

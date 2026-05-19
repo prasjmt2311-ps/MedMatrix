@@ -5,18 +5,16 @@ const rooms = {}; // Track active rooms
 const initSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: 'http://localhost:5173',
+      origin: ['http://localhost:5173', 'http://localhost:5174'],
       methods: ['GET', 'POST'],
       credentials: true,
     },
   });
-  // Make io accessible from controllers
-  const app = require('./server');
-  return io;
 
   io.on('connection', (socket) => {
     console.log('🔌 Socket connected:', socket.id);
-     // Transfer real-time events
+
+    // Transfer real-time events
     socket.on('join-transfer-room', ({ transferId }) => {
       socket.join('transfer-' + transferId);
     });
@@ -24,6 +22,7 @@ const initSocket = (server) => {
     socket.on('leave-transfer-room', ({ transferId }) => {
       socket.leave('transfer-' + transferId);
     });
+
     // Hospital joins SOS monitoring room
     socket.on('join-hospital-monitor', ({ hospitalId }) => {
       socket.join('hospital-monitor');
@@ -41,7 +40,8 @@ const initSocket = (server) => {
       if (!rooms[roomId]) rooms[roomId] = [];
       rooms[roomId].push({ socketId: socket.id, userId, userName, role });
 
-      console.log(userName + ' joined room: ' + roomId);
+      console.log(`📞 [join-room] ${userName} (${role}) joined room: ${roomId} | socket: ${socket.id}`);
+      console.log(`📞 [join-room] Room ${roomId} now has ${rooms[roomId].length} user(s):`, rooms[roomId].map(u => u.userName));
 
       // Notify others in room
       socket.to(roomId).emit('user-joined', {
@@ -53,19 +53,23 @@ const initSocket = (server) => {
 
       // Send existing users to new joiner
       const existingUsers = rooms[roomId].filter(u => u.socketId !== socket.id);
+      console.log(`📞 [existing-users] Sending ${existingUsers.length} existing user(s) to ${userName}`);
       socket.emit('existing-users', existingUsers);
     });
 
     // WebRTC Signaling
     socket.on('offer', ({ to, offer }) => {
+      console.log(`🤝 [offer] ${socket.id} → ${to}`);
       socket.to(to).emit('offer', { from: socket.id, offer });
     });
 
     socket.on('answer', ({ to, answer }) => {
+      console.log(`🤝 [answer] ${socket.id} → ${to}`);
       socket.to(to).emit('answer', { from: socket.id, answer });
     });
 
     socket.on('ice-candidate', ({ to, candidate }) => {
+      console.log(`🧊 [ice-candidate] ${socket.id} → ${to}`);
       socket.to(to).emit('ice-candidate', { from: socket.id, candidate });
     });
 
@@ -80,6 +84,7 @@ const initSocket = (server) => {
 
     // End call
     socket.on('end-call', ({ roomId }) => {
+      console.log(`📞 [end-call] ${socket.id} ending call in room ${roomId}`);
       socket.to(roomId).emit('call-ended');
       socket.leave(roomId);
     });
@@ -96,7 +101,7 @@ const initSocket = (server) => {
     });
   });
 
- return io;
+  return io;
 };
 
 module.exports = initSocket;

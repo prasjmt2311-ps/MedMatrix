@@ -13,7 +13,7 @@ import HospitalCompareCard from '../../../components/transfer/HospitalCompareCar
 import TransferTimeline from '../../../components/transfer/TransferTimeline';
 import AmbulanceTracker from '../../../components/transfer/AmbulanceTracker';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const priorityConfig = {
   low:      { color: 'text-blue-400',   bg: 'bg-blue-500/10',   label: 'Low',      border: 'border-blue-500/30' },

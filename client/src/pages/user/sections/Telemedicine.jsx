@@ -8,7 +8,7 @@ import {
 import { useAuth } from '../../../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -38,13 +38,22 @@ export default function Telemedicine() {
   const localStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const timerRef = useRef(null);
+  const iceCandidateBuffer = useRef([]);
 
   const generateRoomId = () => {
     return 'UC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
+  // Re-attach local stream to video element whenever stage changes (waiting/call use different video refs)
+  useEffect(() => {
+    if (localStreamRef.current && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [stage]);
+
   const startLocalStream = async () => {
     try {
+      console.log('[Telemedicine] Requesting camera/mic access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -53,27 +62,42 @@ export default function Telemedicine() {
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
+      console.log('[Telemedicine] ✅ Local stream acquired:', stream.getTracks().map(t => t.kind + ':' + t.label));
       return stream;
     } catch (err) {
+      console.error('[Telemedicine] ❌ getUserMedia failed:', err);
       toast.error('Camera/mic access denied. Please allow permissions.');
       throw err;
     }
   };
 
   const createPeerConnection = useCallback((targetSocketId) => {
+    console.log('[Telemedicine] Creating PeerConnection for target:', targetSocketId);
+
+    // Close any existing peer connection
+    if (peerConnectionRef.current) {
+      console.log('[Telemedicine] Closing existing PeerConnection');
+      peerConnectionRef.current.close();
+    }
+
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
+    iceCandidateBuffer.current = [];
 
     // Add local tracks
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current);
+        console.log('[Telemedicine] Added local track:', track.kind);
       });
+    } else {
+      console.warn('[Telemedicine] ⚠️ No local stream when creating peer connection!');
     }
 
     // Remote stream
     pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
+      console.log('[Telemedicine] ✅ ontrack fired - remote stream received!', event.streams[0]?.id);
+      if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
         setRemoteStream(true);
       }
@@ -82,6 +106,7 @@ export default function Telemedicine() {
     // ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
+        console.log('[Telemedicine] 🧊 Sending ICE candidate to:', targetSocketId);
         socketRef.current.emit('ice-candidate', {
           to: targetSocketId,
           candidate: event.candidate,
@@ -89,14 +114,105 @@ export default function Telemedicine() {
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      console.log('[Telemedicine] ICE connection state:', pc.iceConnectionState);
+    };
+
     pc.onconnectionstatechange = () => {
+      console.log('[Telemedicine] Connection state:', pc.connectionState);
       if (pc.connectionState === 'connected') {
         toast.success('Call connected!');
+      } else if (pc.connectionState === 'failed') {
+        console.error('[Telemedicine] ❌ Peer connection failed');
+        toast.error('Connection failed. Please try again.');
       }
+    };
+
+    pc.onsignalingstatechange = () => {
+      console.log('[Telemedicine] Signaling state:', pc.signalingState);
     };
 
     return pc;
   }, []);
+
+  const flushIceCandidates = async () => {
+    const pc = peerConnectionRef.current;
+    if (!pc || !pc.remoteDescription) return;
+    console.log(`[Telemedicine] Flushing ${iceCandidateBuffer.current.length} buffered ICE candidates`);
+    for (const candidate of iceCandidateBuffer.current) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.warn('[Telemedicine] Failed to add buffered ICE candidate:', e);
+      }
+    }
+    iceCandidateBuffer.current = [];
+  };
+
+  const setupSignaling = (socket) => {
+    socket.on('offer', async ({ from, offer }) => {
+      console.log('[Telemedicine] 📩 Received offer from:', from);
+      try {
+        const pc = createPeerConnection(from);
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('[Telemedicine] Remote description set (offer)');
+        await flushIceCandidates();
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        console.log('[Telemedicine] 📤 Sending answer to:', from);
+        socket.emit('answer', { to: from, answer });
+        setStage('call');
+        startTimer();
+      } catch (err) {
+        console.error('[Telemedicine] ❌ Error handling offer:', err);
+      }
+    });
+
+    socket.on('answer', async ({ from, answer }) => {
+      console.log('[Telemedicine] 📩 Received answer from:', from);
+      if (peerConnectionRef.current) {
+        try {
+          await peerConnectionRef.current.setRemoteDescription(
+            new RTCSessionDescription(answer)
+          );
+          console.log('[Telemedicine] Remote description set (answer)');
+          await flushIceCandidates();
+        } catch (err) {
+          console.error('[Telemedicine] ❌ Error setting answer:', err);
+        }
+      }
+    });
+
+    socket.on('ice-candidate', async ({ from, candidate }) => {
+      console.log('[Telemedicine] 🧊 Received ICE candidate from:', from);
+      if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
+        try {
+          await peerConnectionRef.current.addIceCandidate(
+            new RTCIceCandidate(candidate)
+          );
+        } catch (e) {
+          console.warn('[Telemedicine] Failed to add ICE candidate:', e);
+        }
+      } else {
+        console.log('[Telemedicine] Buffering ICE candidate (no remote description yet)');
+        iceCandidateBuffer.current.push(candidate);
+      }
+    });
+
+    socket.on('call-message', (msg) => {
+      setMessages(prev => [...prev, msg]);
+    });
+
+    socket.on('call-ended', () => {
+      toast('The other person ended the call.');
+      endCall();
+    });
+
+    socket.on('user-left', () => {
+      toast('The other person left.');
+      setRemoteStream(false);
+    });
+  };
 
   const startCall = async () => {
     const newRoomId = generateRoomId();
@@ -107,74 +223,53 @@ export default function Telemedicine() {
       setStage('waiting');
 
       // Connect socket
-      socketRef.current = io(SOCKET_URL);
+      const socket = io(SOCKET_URL);
+      socketRef.current = socket;
 
-      socketRef.current.on('connect', () => {
-        socketRef.current.emit('join-room', {
+      socket.on('connect', () => {
+        console.log('[Telemedicine] ✅ Socket connected:', socket.id);
+        socket.emit('join-room', {
           roomId: newRoomId,
           userId: user?.id,
           userName: user?.name || 'Patient',
           role: 'user',
         });
+        console.log('[Telemedicine] Emitted join-room for:', newRoomId);
       });
 
-      socketRef.current.on('user-joined', async ({ socketId, userName }) => {
+      socket.on('connect_error', (err) => {
+        console.error('[Telemedicine] ❌ Socket connection error:', err.message);
+        toast.error('Failed to connect to server. Is it running?');
+      });
+
+      socket.on('user-joined', async ({ socketId, userName }) => {
+        console.log('[Telemedicine] 👤 User joined:', userName, '| socketId:', socketId);
         setRemoteUserName(userName);
         toast.success(userName + ' joined the call!');
         setStage('call');
         startTimer();
 
-        // Create offer
-        const pc = createPeerConnection(socketId);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-
-        socketRef.current.emit('offer', { to: socketId, offer });
-      });
-
-      socketRef.current.on('offer', async ({ from, offer }) => {
-        const pc = createPeerConnection(from);
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socketRef.current.emit('answer', { to: from, answer });
-        setStage('call');
-        startTimer();
-      });
-
-      socketRef.current.on('answer', async ({ answer }) => {
-        if (peerConnectionRef.current) {
-          await peerConnectionRef.current.setRemoteDescription(
-            new RTCSessionDescription(answer)
-          );
+        // Create offer (patient is the caller here)
+        try {
+          const pc = createPeerConnection(socketId);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          console.log('[Telemedicine] 📤 Sending offer to:', socketId);
+          socket.emit('offer', { to: socketId, offer });
+        } catch (err) {
+          console.error('[Telemedicine] ❌ Error creating offer:', err);
         }
       });
 
-      socketRef.current.on('ice-candidate', async ({ candidate }) => {
-        if (peerConnectionRef.current) {
-          try {
-            await peerConnectionRef.current.addIceCandidate(
-              new RTCIceCandidate(candidate)
-            );
-          } catch (e) {}
-        }
+      socket.on('existing-users', (users) => {
+        console.log('[Telemedicine] Existing users in room:', users);
       });
 
-      socketRef.current.on('call-message', (msg) => {
-        setMessages(prev => [...prev, msg]);
-      });
-
-      socketRef.current.on('call-ended', () => {
-        toast('The other person ended the call.');
-        endCall();
-      });
-
-      socketRef.current.on('user-left', () => {
-        toast('The other person left.');
-        setRemoteStream(false);
-      });
+      // Setup all signaling handlers
+      setupSignaling(socket);
 
     } catch (err) {
+      console.error('[Telemedicine] ❌ startCall failed:', err);
       setStage('lobby');
     }
   };
@@ -192,75 +287,59 @@ export default function Telemedicine() {
       setStage('call');
       startTimer();
 
-      socketRef.current = io(SOCKET_URL);
+      const socket = io(SOCKET_URL);
+      socketRef.current = socket;
 
-      socketRef.current.on('connect', () => {
-        socketRef.current.emit('join-room', {
+      socket.on('connect', () => {
+        console.log('[Telemedicine] ✅ Socket connected:', socket.id);
+        socket.emit('join-room', {
           roomId: rid,
           userId: user?.id,
           userName: user?.name || 'Patient',
           role: 'user',
         });
+        console.log('[Telemedicine] Emitted join-room for:', rid);
       });
 
-      socketRef.current.on('existing-users', async (users) => {
+      socket.on('connect_error', (err) => {
+        console.error('[Telemedicine] ❌ Socket connection error:', err.message);
+        toast.error('Failed to connect to server. Is it running?');
+      });
+
+      socket.on('existing-users', async (users) => {
+        console.log('[Telemedicine] Existing users in room:', users);
         if (users.length > 0) {
           const target = users[0];
           setRemoteUserName(target.userName);
-          const pc = createPeerConnection(target.socketId);
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socketRef.current.emit('offer', { to: target.socketId, offer });
-        }
-      });
-
-      socketRef.current.on('offer', async ({ from, offer }) => {
-        const pc = createPeerConnection(from);
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socketRef.current.emit('answer', { to: from, answer });
-      });
-
-      socketRef.current.on('answer', async ({ answer }) => {
-        if (peerConnectionRef.current) {
-          await peerConnectionRef.current.setRemoteDescription(
-            new RTCSessionDescription(answer)
-          );
-        }
-      });
-
-      socketRef.current.on('ice-candidate', async ({ candidate }) => {
-        if (peerConnectionRef.current) {
           try {
-            await peerConnectionRef.current.addIceCandidate(
-              new RTCIceCandidate(candidate)
-            );
-          } catch (e) {}
+            const pc = createPeerConnection(target.socketId);
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            console.log('[Telemedicine] 📤 Sending offer to existing user:', target.socketId);
+            socket.emit('offer', { to: target.socketId, offer });
+          } catch (err) {
+            console.error('[Telemedicine] ❌ Error creating offer for existing user:', err);
+          }
         }
       });
 
-      socketRef.current.on('call-message', (msg) => {
-        setMessages(prev => [...prev, msg]);
+      socket.on('user-joined', async ({ socketId, userName }) => {
+        console.log('[Telemedicine] 👤 User joined:', userName, '| socketId:', socketId);
+        setRemoteUserName(userName);
       });
 
-      socketRef.current.on('call-ended', () => {
-        toast('Call ended.');
-        endCall();
-      });
-
-      socketRef.current.on('user-left', () => {
-        toast('The other person left.');
-        setRemoteStream(false);
-      });
+      // Setup all signaling handlers
+      setupSignaling(socket);
 
     } catch (err) {
+      console.error('[Telemedicine] ❌ joinCall failed:', err);
       setStage('lobby');
     }
   };
 
   const startTimer = () => {
     setCallDuration(0);
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
@@ -278,6 +357,9 @@ export default function Telemedicine() {
     }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    peerConnectionRef.current = null;
+    localStreamRef.current = null;
+    socketRef.current = null;
     setStage('lobby');
     setRemoteStream(false);
     setMessages([]);
@@ -334,6 +416,7 @@ export default function Telemedicine() {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(t => t.stop());
       }
+      if (peerConnectionRef.current) peerConnectionRef.current.close();
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);

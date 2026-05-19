@@ -1,4 +1,5 @@
 const TransferRequest = require('../models/TransferRequest');
+const MedicalRecord = require('../models/MedicalRecord');
 const Hospital = require('../models/Hospital');
 const Groq = require('groq-sdk');
 
@@ -22,6 +23,7 @@ const createTransfer = async (req, res) => {
       patientName, patientAge, patientPhone, bloodGroup,
       medicalCondition, medicalSummary, toHospitalId,
       priority, requiresICU, requiresAmbulance, specialistNeeded,
+      transferReason, transferReasonDetail, vitals, digilockerDocIds,
     } = req.body;
 
     if (!patientName || !medicalCondition || !toHospitalId) {
@@ -61,11 +63,19 @@ const createTransfer = async (req, res) => {
       requiresICU: requiresICU || false,
       requiresAmbulance: requiresAmbulance !== false,
       specialistNeeded: specialistNeeded || '',
+      transferReason: transferReason || 'other',
+      transferReasonDetail: transferReasonDetail || '',
+      vitals: vitals || {},
+      digilocker: {
+        synced: Array.isArray(digilockerDocIds) && digilockerDocIds.length > 0,
+        syncedAt: Array.isArray(digilockerDocIds) && digilockerDocIds.length > 0 ? new Date() : null,
+        documentIds: digilockerDocIds || [],
+      },
       timeline: [{
         status: 'pending',
-        message: 'Transfer request created and sent to ' + toHospital.hospitalName,
+        message: 'Transfer request created by ' + fromHospital.name + ' and sent to ' + toHospital.hospitalName,
         timestamp: new Date(),
-        updatedBy: patientName,
+        updatedBy: fromHospital.name,
       }],
     });
 
@@ -75,8 +85,11 @@ const createTransfer = async (req, res) => {
       condition: medicalCondition,
       priority,
       toHospitalId: toHospital._id,
+      fromHospital: fromHospital.name,
+      transferReason,
     });
 
+    console.log(`🚑 [Transfer] Created: ${patientName} → ${toHospital.hospitalName} (${transferReason})`);
     res.status(201).json({ message: 'Transfer request sent', transfer });
   } catch (err) {
     console.error('CREATE TRANSFER ERROR:', err.message);
@@ -201,6 +214,186 @@ const updateTransferStatus = async (req, res) => {
     });
 
     res.json({ message: 'Status updated', transfer });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @PUT /api/transfer/:id/request-info — Receiving hospital requests more info
+const requestInfo = async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ message: 'Info request message is required' });
+
+    const transfer = await TransferRequest.findById(req.params.id);
+    if (!transfer) return res.status(404).json({ message: 'Transfer not found' });
+
+    transfer.status = 'info-requested';
+    transfer.infoRequest = {
+      message,
+      requestedAt: new Date(),
+      response: '',
+      respondedAt: null,
+    };
+    addTimeline(transfer, 'info-requested', 'More information requested: ' + message, req.user.hospitalName);
+    await transfer.save();
+
+    emitEvent(req, 'transfer-info-requested', {
+      transferId: transfer._id,
+      patientName: transfer.patientName,
+      message,
+      hospitalName: req.user.hospitalName,
+    });
+
+    console.log(`📋 [Transfer] Info requested for ${transfer.patientName} by ${req.user.hospitalName}`);
+    res.json({ message: 'Info request sent', transfer });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @PUT /api/transfer/:id/respond-info — Sender hospital responds with additional info
+const respondToInfoRequest = async (req, res) => {
+  try {
+    const { response } = req.body;
+    if (!response) return res.status(400).json({ message: 'Response is required' });
+
+    const transfer = await TransferRequest.findById(req.params.id);
+    if (!transfer) return res.status(404).json({ message: 'Transfer not found' });
+
+    transfer.status = 'pending'; // Back to pending for review
+    transfer.infoRequest.response = response;
+    transfer.infoRequest.respondedAt = new Date();
+    addTimeline(transfer, 'pending', 'Additional info provided: ' + response, req.user.hospitalName || req.user.name);
+    await transfer.save();
+
+    emitEvent(req, 'transfer-info-responded', {
+      transferId: transfer._id,
+      patientName: transfer.patientName,
+      response,
+    });
+
+    res.json({ message: 'Info response sent', transfer });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @POST /api/transfer/:id/sync-digilocker — Simulate DigiLocker document fetch
+const syncDigilocker = async (req, res) => {
+  try {
+    const transfer = await TransferRequest.findById(req.params.id);
+    if (!transfer) return res.status(404).json({ message: 'Transfer not found' });
+
+    const patientName = transfer.patientName;
+    const genDocId = () => 'DL-' + new Date().getFullYear() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // Generate simulated DigiLocker medical records
+    const docsToCreate = [
+      {
+        type: 'discharge_summary',
+        title: 'Discharge Summary — ' + patientName,
+        description: 'Complete discharge summary including treatment details, medications prescribed, and follow-up instructions.',
+        issuedBy: transfer.fromHospital.name || 'UnityCure Hospital',
+        metadata: {
+          diagnosis: transfer.medicalCondition,
+          medications: ['Paracetamol 500mg', 'Amoxicillin 250mg', 'Pantoprazole 40mg'],
+          notes: transfer.medicalSummary || 'Patient under observation. Vitals stable.',
+        },
+      },
+      {
+        type: 'prescription',
+        title: 'Current Prescription — ' + patientName,
+        description: 'Active medications and dosage schedule for ongoing treatment.',
+        issuedBy: transfer.fromHospital.name || 'UnityCure Hospital',
+        metadata: {
+          medications: ['Tab. Clopidogrel 75mg OD', 'Tab. Atorvastatin 20mg HS', 'Inj. Enoxaparin 40mg SC BD'],
+          notes: 'Continue for 14 days. Review after completion.',
+        },
+      },
+      {
+        type: 'lab_report',
+        title: 'Blood Panel Report — ' + patientName,
+        description: 'Complete blood count, metabolic panel, and coagulation profile.',
+        issuedBy: 'UnityCure Diagnostics',
+        metadata: {
+          labValues: {
+            hemoglobin: '12.5 g/dL',
+            wbc: '8,200 /μL',
+            platelets: '2.1 L/μL',
+            creatinine: '0.9 mg/dL',
+          },
+          vitals: transfer.vitals || {},
+          notes: 'All parameters within normal range.',
+        },
+      },
+      {
+        type: 'insurance',
+        title: 'Health Insurance Policy — ' + patientName,
+        description: 'Active health insurance coverage details and claim eligibility.',
+        issuedBy: 'Star Health Insurance',
+        metadata: {
+          notes: 'Policy No: SH-2024-' + Math.floor(Math.random() * 900000 + 100000) + ' | Sum Insured: ₹5,00,000 | Status: Active',
+        },
+      },
+      {
+        type: 'vitals_report',
+        title: 'Vitals Monitoring Report — ' + patientName,
+        description: 'Latest vitals recorded before transfer initiation.',
+        issuedBy: transfer.fromHospital.name || 'UnityCure Hospital',
+        metadata: {
+          vitals: transfer.vitals || { bp: '120/80', heartRate: '78', spo2: '98', temperature: '98.6', respiratoryRate: '16' },
+          notes: 'Vitals recorded at time of transfer initiation.',
+        },
+      },
+    ];
+
+    const createdDocs = [];
+    for (const doc of docsToCreate) {
+      const record = await MedicalRecord.create({
+        patientId: transfer.patientId,
+        patientName,
+        transferId: transfer._id,
+        type: doc.type,
+        title: doc.title,
+        description: doc.description,
+        issuedBy: doc.issuedBy,
+        issuedDate: new Date(),
+        digilockerVerified: true,
+        digilockerDocId: genDocId(),
+        digilockerSyncedAt: new Date(),
+        fileUrl: '/documents/' + doc.type + '-' + transfer._id + '.pdf',
+        metadata: doc.metadata,
+      });
+      createdDocs.push(record);
+    }
+
+    // Update transfer with DigiLocker info
+    transfer.digilocker = {
+      synced: true,
+      syncedAt: new Date(),
+      documentIds: createdDocs.map(d => d._id),
+    };
+    addTimeline(transfer, transfer.status, 'DigiLocker documents synced — ' + createdDocs.length + ' records fetched and verified.', 'DigiLocker');
+    await transfer.save();
+
+    console.log(`📄 [DigiLocker] Synced ${createdDocs.length} documents for ${patientName}`);
+    res.json({
+      message: 'DigiLocker documents synced successfully',
+      documents: createdDocs,
+      count: createdDocs.length,
+    });
+  } catch (err) {
+    console.error('DIGILOCKER SYNC ERROR:', err.message);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// @GET /api/transfer/:id/documents — Get all medical records for a transfer
+const getTransferDocuments = async (req, res) => {
+  try {
+    const documents = await MedicalRecord.find({ transferId: req.params.id }).sort({ createdAt: -1 });
+    res.json({ documents, count: documents.length });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -335,4 +528,5 @@ module.exports = {
   createTransfer, getHospitalTransfers, getUserTransfers,
   approveTransfer, rejectTransfer, updateTransferStatus,
   getRecommendations, updateAmbulanceLocation, getTransfer,
+  requestInfo, respondToInfoRequest, syncDigilocker, getTransferDocuments,
 };
