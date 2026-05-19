@@ -22,6 +22,7 @@ app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/hospital', require('./routes/hospitalRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/sos', require('./routes/sosRoutes'));
+app.use('/api/transfer', require('./routes/transferRoutes'));
 
 // Health check
 app.get('/', (req, res) => res.json({ message: '🏥 UnityCure API running' }));

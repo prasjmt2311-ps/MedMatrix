@@ -16,6 +16,14 @@ const initSocket = (server) => {
 
   io.on('connection', (socket) => {
     console.log('🔌 Socket connected:', socket.id);
+     // Transfer real-time events
+    socket.on('join-transfer-room', ({ transferId }) => {
+      socket.join('transfer-' + transferId);
+    });
+
+    socket.on('leave-transfer-room', ({ transferId }) => {
+      socket.leave('transfer-' + transferId);
+    });
     // Hospital joins SOS monitoring room
     socket.on('join-hospital-monitor', ({ hospitalId }) => {
       socket.join('hospital-monitor');

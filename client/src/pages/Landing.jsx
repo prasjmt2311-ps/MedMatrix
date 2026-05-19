@@ -190,7 +190,7 @@ function Hero() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <button
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate('/signup/user')}
             className="px-8 py-4 rounded-2xl bg-gradient-to-r from-teal-500 to-teal-400 text-slate-900 font-bold text-lg hover:opacity-90 transition-all flex items-center gap-2 glow-teal"
           >
             Start Free <ArrowRight size={20} />

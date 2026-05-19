@@ -136,7 +136,7 @@ export default function AIAssistant() {
                     <div className="text-white font-semibold text-sm">UnityCure AI</div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                      <span className="text-xs text-slate-400">Powered by Gemini</span>
+                      <span className="text-xs text-slate-400">Powered by OpenAI</span>
                     </div>
                   </div>
                 </div>

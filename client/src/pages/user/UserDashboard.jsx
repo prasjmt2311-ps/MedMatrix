@@ -6,13 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Stethoscope, Calendar, Video,
   Map, PartyPopper, Heart, MessageSquare,
-  LogOut, Menu, X, Bell, ChevronRight
+  LogOut, Menu, X, Bell, ChevronRight, Truck
 } from 'lucide-react';
 
 import Overview from './sections/Overview';
 import Consultation from './sections/Consultation';
 import Appointments from './sections/Appointments';
 import Telemedicine from './sections/Telemedicine';
+import SmartTransfer from './sections/SmartTransfer';
 import ReportMap from './sections/ReportMap';
 import Events from './sections/Events';
 import Wellness from './sections/Wellness';
@@ -25,6 +26,7 @@ const navItems = [
   { id: 'consultation',  label: 'Consultation',   icon: Stethoscope },
   { id: 'appointments',  label: 'Appointments',   icon: Calendar },
   { id: 'telemedicine',  label: 'Telemedicine',   icon: Video },
+  { id: 'transfer', label: 'Smart Transfer', icon: Truck },
   { id: 'reportmap',     label: 'Report & Map',   icon: Map },
   { id: 'events',        label: 'Events',         icon: PartyPopper },
   { id: 'wellness',      label: 'Wellness',       icon: Heart },
@@ -32,6 +34,7 @@ const navItems = [
 ];
 
 const sectionMap = {
+  transfer: <SmartTransfer />,
   overview:     <Overview />,
   consultation: <Consultation />,
   appointments: <Appointments />,
