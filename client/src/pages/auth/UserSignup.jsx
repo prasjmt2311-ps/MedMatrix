@@ -33,7 +33,7 @@ export default function UserSignup() {
     try {
       const { data } = await api.post('/auth/register/user', form);
       login(data.token, data.user, data.role);
-      toast.success('Account created! Welcome to UnityCure.');
+      toast.success('Account created! Welcome to MedMatrix.');
       navigate('/user/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
@@ -57,7 +57,7 @@ export default function UserSignup() {
             <Heart size={20} className="text-white" fill="white" />
           </div>
           <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Unity<span style={{ background: 'linear-gradient(135deg, #00d4aa, #7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Cure</span>
+            Med<span style={{ background: 'linear-gradient(135deg, #00d4aa, #7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Matrix</span>
           </span>
         </Link>
 
@@ -65,7 +65,7 @@ export default function UserSignup() {
           <h1 className="text-2xl font-bold text-white text-center mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
             Create Account
           </h1>
-          <p className="text-slate-400 text-sm text-center mb-8">Join UnityCure as a Patient</p>
+          <p className="text-slate-400 text-sm text-center mb-8">Join MedMatrix as a Patient</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name */}

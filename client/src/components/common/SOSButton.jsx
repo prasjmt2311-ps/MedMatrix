@@ -582,7 +582,7 @@ function SOSModal({ onClose }) {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Building2 size={14} className="text-violet-400" />
-                  <h3 className="text-white font-semibold text-sm">UnityCure Hospitals</h3>
+                  <h3 className="text-white font-semibold text-sm">MedMatrix Hospitals</h3>
                   <span className="text-slate-600 text-xs">({registeredHospitals.length})</span>
                 </div>
                 <div className="space-y-2">
@@ -723,7 +723,7 @@ function SOSModal({ onClose }) {
                 <div className="flex items-center gap-2">
                   <Heart size={13} className="text-violet-400" />
                   <h3 className="text-white font-bold text-xs uppercase tracking-wider">
-                    UnityCure Network
+                    MedMatrix Network
                   </h3>
                   {registeredHospitals.length > 0 && (
                     <span className="text-slate-600 text-[10px]">({registeredHospitals.length})</span>

@@ -11,6 +11,7 @@ import {
 
 import Overview from './sections/Overview';
 import Consultation from './sections/Consultation';
+import OnlineConsultation from './sections/OnlineConsultation';
 import Appointments from './sections/Appointments';
 import Telemedicine from './sections/Telemedicine';
 import SmartTransfer from './sections/SmartTransfer';
@@ -24,6 +25,7 @@ import SOSButton from '../../components/common/SOSButton';
 const navItems = [
   { id: 'overview',      label: 'Dashboard',     icon: LayoutDashboard },
   { id: 'consultation',  label: 'Consultation',   icon: Stethoscope },
+  { id: 'online-consultation', label: 'Online Consultation', icon: Stethoscope },
   { id: 'appointments',  label: 'Appointments',   icon: Calendar },
   { id: 'telemedicine',  label: 'Telemedicine',   icon: Video },
   { id: 'transfer', label: 'Smart Transfer', icon: Truck },
@@ -37,6 +39,7 @@ const sectionMap = {
   transfer: <SmartTransfer />,
   overview:     <Overview />,
   consultation: <Consultation />,
+  'online-consultation': <OnlineConsultation />,
   appointments: <Appointments />,
   telemedicine: <Telemedicine />,
   reportmap:    <ReportMap />,
@@ -68,7 +71,7 @@ export default function UserDashboard() {
             <Heart size={16} className="text-white" fill="white" />
           </div>
           <span className="text-lg font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Unity<span style={{ background: 'linear-gradient(135deg,#00d4aa,#7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Cure</span>
+            Med<span style={{ background: 'linear-gradient(135deg,#00d4aa,#7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Matrix</span>
           </span>
         </div>
       </div>

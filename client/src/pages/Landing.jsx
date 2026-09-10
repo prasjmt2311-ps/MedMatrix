@@ -42,7 +42,7 @@ function Navbar() {
             <Heart size={18} className="text-white" fill="white" />
           </div>
           <span className="text-xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Unity<span className="gradient-text">Cure</span>
+            Med<span className="gradient-text">Matrix</span>
           </span>
         </div>
 
@@ -322,12 +322,12 @@ function Benefits() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <span className="text-xs uppercase tracking-widest text-teal-400 font-semibold">Why UnityCure</span>
+            <span className="text-xs uppercase tracking-widest text-teal-400 font-semibold">Why MedMatrix</span>
             <h2 className="text-4xl md:text-5xl font-bold text-white mt-3 mb-6">
               Healthcare that<br /><span className="gradient-text">works for you</span>
             </h2>
             <p className="text-slate-400 mb-8 leading-relaxed">
-              We built UnityCure because healthcare shouldn't be complicated. 
+              We built MedMatrix because healthcare shouldn't be complicated. 
               Whether you're a patient in distress or a hospital managing hundreds of beds — 
               one platform handles it all.
             </p>
@@ -369,8 +369,8 @@ function Benefits() {
 function Testimonials() {
   const [active, setActive] = useState(0);
   const testimonials = [
-    { name: 'Dr. Priya Sharma', role: 'Cardiologist, AIIMS Delhi', text: 'UnityCure transformed how we manage patient admissions. Real-time bed tracking alone saves us hours every day.', stars: 5 },
-    { name: 'Rahul Mehta', role: 'Patient, Mumbai', text: 'During my father\'s cardiac emergency, I found an ICU bed in under 3 minutes using UnityCure. It literally saved his life.', stars: 5 },
+    { name: 'Dr. Priya Sharma', role: 'Cardiologist, AIIMS Delhi', text: 'MedMatrix transformed how we manage patient admissions. Real-time bed tracking alone saves us hours every day.', stars: 5 },
+    { name: 'Rahul Mehta', role: 'Patient, Mumbai', text: 'During my father\'s cardiac emergency, I found an ICU bed in under 3 minutes using MedMatrix. It literally saved his life.', stars: 5 },
     { name: 'Admin, Apollo Hospitals', role: 'Hospital Management', text: 'The hospital dashboard gives us complete control over resources. Patient transfer approvals have never been smoother.', stars: 5 },
     { name: 'Ananya Singh', role: 'Patient, Bangalore', text: 'The telemedicine feature is brilliant. Consulted a specialist from home, got a prescription — zero travel, zero wait time.', stars: 5 },
   ];
@@ -440,7 +440,7 @@ function Testimonials() {
 function FAQ() {
   const [open, setOpen] = useState(null);
   const faqs = [
-    { q: 'Is UnityCure free to use?', a: 'Yes! Basic features are completely free. Premium features like advanced analytics are available for hospitals at affordable pricing.' },
+    { q: 'Is MedMatrix free to use?', a: 'Yes! Basic features are completely free. Premium features like advanced analytics are available for hospitals at affordable pricing.' },
     { q: 'How accurate is real-time bed availability?', a: 'Bed availability is updated every 60 seconds directly from hospital management systems. Accuracy depends on hospital integration status.' },
     { q: 'Can I use telemedicine without registration?', a: 'No — registration ensures your medical history is maintained securely and doctors can access your profile during consultations.' },
     { q: 'Is my health data safe?', a: 'Absolutely. All data is encrypted in transit and at rest. We follow HIPAA-inspired data privacy principles and never sell user data.' },
@@ -522,7 +522,7 @@ function WatchDemo() {
           <h2 className="text-4xl font-bold text-white mt-3">
             See it in <span className="gradient-text">action</span>
           </h2>
-          <p className="text-slate-400 mt-4">A 2-minute walkthrough of everything UnityCure can do.</p>
+          <p className="text-slate-400 mt-4">A 2-minute walkthrough of everything MedMatrix can do.</p>
         </motion.div>
 
         <motion.div
@@ -543,7 +543,7 @@ function WatchDemo() {
             </motion.div>
           </div>
           <div className="absolute bottom-6 left-6 text-left">
-            <div className="text-white font-semibold text-lg">UnityCure Full Demo</div>
+            <div className="text-white font-semibold text-lg">MedMatrix Full Demo</div>
             <div className="text-slate-400 text-sm">2:14 • Healthcare Platform Overview</div>
           </div>
         </motion.div>
@@ -582,7 +582,7 @@ function Footer() {
                 <Heart size={16} className="text-white" fill="white" />
               </div>
               <span className="text-lg font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-                Unity<span className="gradient-text">Cure</span>
+                Med<span className="gradient-text">Matrix</span>
               </span>
             </div>
             <p className="text-slate-500 text-sm leading-relaxed">
@@ -643,7 +643,7 @@ function Footer() {
         </div>
 
         <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <span className="text-slate-600 text-sm">© 2026 UnityCure. All rights reserved.</span>
+          <span className="text-slate-600 text-sm">© 2026 MedMatrix. All rights reserved.</span>
           <span className="text-slate-600 text-sm flex items-center gap-1">
             Built with <Heart size={12} className="text-red-500" fill="#ef4444" /> for better healthcare
           </span>

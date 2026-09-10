@@ -324,7 +324,7 @@ export default function SmartTransfer() {
                 <BedDouble size={32} className="text-slate-600 mx-auto mb-3" />
                 <div className="text-slate-400 font-medium">No hospitals with available resources</div>
                 <div className="text-slate-600 text-sm mt-1">
-                  Hospitals appear here after they register and update their resources on UnityCure
+                  Hospitals appear here after they register and update their resources on MedMatrix
                 </div>
               </div>
             ) : (

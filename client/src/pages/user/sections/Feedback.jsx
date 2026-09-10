@@ -40,7 +40,7 @@ export default function Feedback() {
           <CheckCircle size={28} className="text-teal-400" />
         </div>
         <h3 className="text-white font-bold text-xl mb-2">Feedback Submitted!</h3>
-        <p className="text-slate-400 text-sm max-w-sm">Your feedback helps us improve UnityCure for everyone. Thank you!</p>
+        <p className="text-slate-400 text-sm max-w-sm">Your feedback helps us improve MedMatrix for everyone. Thank you!</p>
         <button
           onClick={() => { setSubmitted(false); setRating(0); setMessage(''); }}
           className="mt-6 px-5 py-2.5 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 text-sm hover:bg-teal-500/25 transition-all"
@@ -53,7 +53,7 @@ export default function Feedback() {
 
   return (
     <div className="max-w-lg space-y-6">
-      <p className="text-slate-400 text-sm">Your feedback directly helps us improve UnityCure.</p>
+      <p className="text-slate-400 text-sm">Your feedback directly helps us improve MedMatrix.</p>
 
       {/* Star Rating */}
       <div className="glass rounded-2xl p-6 text-center">
@@ -113,7 +113,7 @@ export default function Feedback() {
           value={message}
           onChange={e => setMessage(e.target.value)}
           rows={5}
-          placeholder="Tell us about your experience, what we can improve, or what you love about UnityCure..."
+          placeholder="Tell us about your experience, what we can improve, or what you love about MedMatrix..."
           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/50 transition-colors resize-none"
         />
         <div className="text-right text-xs text-slate-600 mt-1">{message.length}/500</div>

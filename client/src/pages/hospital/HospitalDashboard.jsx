@@ -54,7 +54,7 @@ export default function HospitalDashboard() {
             <Heart size={16} className="text-white" fill="white" />
           </div>
           <span className="text-lg font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Unity<span style={{ background: 'linear-gradient(135deg,#00d4aa,#7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Cure</span>
+            Med<span style={{ background: 'linear-gradient(135deg,#00d4aa,#7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Matrix</span>
           </span>
         </div>
         <div className="mt-1 text-xs text-violet-400 font-medium">Hospital Portal</div>

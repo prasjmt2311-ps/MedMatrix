@@ -12,7 +12,7 @@ const medicalRecordSchema = new mongoose.Schema({
   },
   title: { type: String, required: true },
   description: { type: String, default: '' },
-  issuedBy: { type: String, default: 'UnityCure Hospital' },
+  issuedBy: { type: String, default: 'MedMatrix Hospital' },
   issuedDate: { type: Date, default: Date.now },
 
   // DigiLocker simulation

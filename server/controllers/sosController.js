@@ -291,7 +291,7 @@ const getRegisteredHospitals = async (req, res) => {
         resources: h.resources,
         distanceKm,
         distanceText,
-        source: 'UnityCure',
+        source: 'MedMatrix',
       };
     });
 

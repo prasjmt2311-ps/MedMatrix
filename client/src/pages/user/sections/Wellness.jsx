@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const tips = [
   { icon: Droplets, title: 'Stay Hydrated', desc: 'Drink 8 glasses of water daily. Track intake to stay consistent.', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-  { icon: Moon, title: 'Sleep Well', desc: '7-9 hours of quality sleep improves immunity and mental health.', color: 'text-violet-400', bg: 'bg-violet-500/10' },
+  { icon: Moon, title: 'Sleep Well', desc: '7-9 hours of quality sleep improves immMed and mental health.', color: 'text-violet-400', bg: 'bg-violet-500/10' },
   { icon: Apple, title: 'Eat Balanced', desc: 'Include fruits, vegetables, and proteins in every meal.', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   { icon: Activity, title: 'Stay Active', desc: '30 minutes of exercise daily reduces chronic disease risk by 50%.', color: 'text-teal-400', bg: 'bg-teal-500/10' },
 ];

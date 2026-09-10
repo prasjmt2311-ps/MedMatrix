@@ -294,7 +294,7 @@ const syncDigilocker = async (req, res) => {
         type: 'discharge_summary',
         title: 'Discharge Summary — ' + patientName,
         description: 'Complete discharge summary including treatment details, medications prescribed, and follow-up instructions.',
-        issuedBy: transfer.fromHospital.name || 'UnityCure Hospital',
+        issuedBy: transfer.fromHospital.name || 'MedMatrix Hospital',
         metadata: {
           diagnosis: transfer.medicalCondition,
           medications: ['Paracetamol 500mg', 'Amoxicillin 250mg', 'Pantoprazole 40mg'],
@@ -305,7 +305,7 @@ const syncDigilocker = async (req, res) => {
         type: 'prescription',
         title: 'Current Prescription — ' + patientName,
         description: 'Active medications and dosage schedule for ongoing treatment.',
-        issuedBy: transfer.fromHospital.name || 'UnityCure Hospital',
+        issuedBy: transfer.fromHospital.name || 'MedMatrix Hospital',
         metadata: {
           medications: ['Tab. Clopidogrel 75mg OD', 'Tab. Atorvastatin 20mg HS', 'Inj. Enoxaparin 40mg SC BD'],
           notes: 'Continue for 14 days. Review after completion.',
@@ -315,7 +315,7 @@ const syncDigilocker = async (req, res) => {
         type: 'lab_report',
         title: 'Blood Panel Report — ' + patientName,
         description: 'Complete blood count, metabolic panel, and coagulation profile.',
-        issuedBy: 'UnityCure Diagnostics',
+        issuedBy: 'MedMatrix Diagnostics',
         metadata: {
           labValues: {
             hemoglobin: '12.5 g/dL',
@@ -340,7 +340,7 @@ const syncDigilocker = async (req, res) => {
         type: 'vitals_report',
         title: 'Vitals Monitoring Report — ' + patientName,
         description: 'Latest vitals recorded before transfer initiation.',
-        issuedBy: transfer.fromHospital.name || 'UnityCure Hospital',
+        issuedBy: transfer.fromHospital.name || 'MedMatrix Hospital',
         metadata: {
           vitals: transfer.vitals || { bp: '120/80', heartRate: '78', spo2: '98', temperature: '98.6', respiratoryRate: '16' },
           notes: 'Vitals recorded at time of transfer initiation.',

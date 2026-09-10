@@ -55,7 +55,7 @@ export default function Login() {
             <Heart size={20} className="text-white" fill="white" />
           </div>
           <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Unity<span style={{ background: 'linear-gradient(135deg, #00d4aa, #7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Cure</span>
+            Med<span style={{ background: 'linear-gradient(135deg, #00d4aa, #7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Matrix</span>
           </span>
         </Link>
 
@@ -123,7 +123,7 @@ export default function Login() {
           {/* Divider */}
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-white/8" />
-            <span className="text-xs text-slate-600">New to UnityCure?</span>
+            <span className="text-xs text-slate-600">New to MedMatrix?</span>
             <div className="flex-1 h-px bg-white/8" />
           </div>
 

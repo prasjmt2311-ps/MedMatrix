@@ -35,7 +35,7 @@ export default function HospitalSignup() {
     try {
       const { data } = await api.post('/auth/register/hospital', form);
       login(data.token, data.user, data.role);
-      toast.success('Hospital registered! Welcome to UnityCure.');
+      toast.success('Hospital registered! Welcome to MedMatrix.');
       navigate('/hospital/dashboard');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
@@ -61,7 +61,7 @@ export default function HospitalSignup() {
             <Heart size={20} className="text-white" fill="white" />
           </div>
           <span className="text-2xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Unity<span style={{ background: 'linear-gradient(135deg, #00d4aa, #7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Cure</span>
+            Med<span style={{ background: 'linear-gradient(135deg, #00d4aa, #7c6aff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Matrix</span>
           </span>
         </Link>
 
@@ -69,7 +69,7 @@ export default function HospitalSignup() {
           <h1 className="text-2xl font-bold text-white text-center mb-1" style={{ fontFamily: 'Sora, sans-serif' }}>
             Register Hospital
           </h1>
-          <p className="text-slate-400 text-sm text-center mb-8">Join UnityCure as a Healthcare Provider</p>
+          <p className="text-slate-400 text-sm text-center mb-8">Join MedMatrix as a Healthcare Provider</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Hospital Name */}

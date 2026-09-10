@@ -26,8 +26,8 @@ export default function AIAssistant() {
     {
       role: 'assistant',
       content: role === 'hospital'
-        ? "Hello! I'm UnityCure AI, your hospital management assistant. Ask me anything about patient care, resources, or operations."
-        : "Hello! I'm UnityCure AI, your personal health assistant. Ask me anything about your health, symptoms, or how to use UnityCure.",
+        ? "Hello! I'm MedMatrix AI, your hospital management assistant. Ask me anything about patient care, resources, or operations."
+        : "Hello! I'm MedMatrix AI, your personal health assistant. Ask me anything about your health, symptoms, or how to use MedMatrix.",
     }
   ]);
   const [input, setInput] = useState('');
@@ -133,7 +133,7 @@ export default function AIAssistant() {
                     <Bot size={18} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-white font-semibold text-sm">UnityCure AI</div>
+                    <div className="text-white font-semibold text-sm">MedMatrix AI</div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
                       <span className="text-xs text-slate-400">Powered by OpenAI</span>

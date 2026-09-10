@@ -136,7 +136,7 @@ export default function ReportMap() {
                 <MapPin size={28} className="text-slate-600 mx-auto mb-2" />
                 <div className="text-slate-400 text-sm">No hospitals found</div>
                 <div className="text-slate-600 text-xs mt-1">
-                  Hospitals appear here after they register on UnityCure
+                  Hospitals appear here after they register on MedMatrix
                 </div>
               </div>
             ) : (

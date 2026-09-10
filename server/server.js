@@ -16,7 +16,7 @@ app.use(cors({
   origin: function(origin, callback) {
     const allowed = [
       'http://localhost:5173',
-      'https://unity-cure2-0.vercel.app',
+      'https://Med-cure2-0.vercel.app',
       process.env.FRONTEND_URL,
     ].filter(Boolean);
     if (!origin || allowed.includes(origin)) {
@@ -41,7 +41,7 @@ app.use('/api/sos', require('./routes/sosRoutes'));
 app.use('/api/transfer', require('./routes/transferRoutes'));
 
 // Health check
-app.get('/', (req, res) => res.json({ message: '🏥 UnityCure API running' }));
+app.get('/', (req, res) => res.json({ message: '🏥 MedMatrix API running' }));
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
