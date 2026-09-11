@@ -14,27 +14,73 @@ export default function UserSignup() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    name: '', email: '', password: '', phone: '', bloodGroup: 'O+', address: ''
-  });
+  name: '',
+  email: '',
+  password: '',
+  phone: '',
+  bloodGroup: 'O+',
+  address: '',
+  dateOfBirth: '',
+  gender: 'Other',
+  city: '',
+  state: '',
+  pincode: '',
+  emergencyContact: {
+    name: '',
+    phone: '',
+    relationship: ''
+  },
+  allergies: '',
+  medicalConditions: '',
+  currentMedications: '',
+  previousSurgeries: ''
+});;
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.password || !form.phone) {
-      toast.error('Please fill all required fields');
-      return;
-    }
+   if (
+  !form.name ||
+  !form.email ||
+  !form.password ||
+  !form.phone ||
+  !form.address
+) {
+  toast.error('Please fill all required fields');
+  return;
+}
     if (form.password.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/register/user', form);
+     const submitData = {
+  ...form,
+  allergies: form.allergies
+    ? form.allergies.split(',').map(item => item.trim()).filter(Boolean)
+    : [],
+  medicalConditions: form.medicalConditions
+    ? form.medicalConditions.split(',').map(item => item.trim()).filter(Boolean)
+    : [],
+  currentMedications: form.currentMedications
+    ? form.currentMedications.split(',').map(item => item.trim()).filter(Boolean)
+    : [],
+  previousSurgeries: form.previousSurgeries
+    ? form.previousSurgeries.split(',').map(item => item.trim()).filter(Boolean)
+    : []
+};
+
+const { data } = await api.post('/auth/register/user', submitData);
       login(data.token, data.user, data.role);
-      toast.success('Account created! Welcome to MedMatrix.');
-      navigate('/user/dashboard');
+     toast.success(`Account created! Your Patient ID is ${data.user.patientId}`);
+
+navigate('/user/dashboard', {
+  state: {
+    patientId: data.user.patientId
+  }
+});
     } catch (err) {
       toast.error(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -123,13 +169,188 @@ export default function UserSignup() {
                 </button>
               </div>
             </div>
+            {/* Date of Birth + Gender */}
+<div className="grid grid-cols-2 gap-3">
+  <div>
+    <label className="text-xs text-slate-400 font-medium mb-1.5 block">
+      Date of Birth
+    </label>
+    <input
+      name="dateOfBirth"
+      type="date"
+      value={form.dateOfBirth}
+      onChange={handleChange}
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500/60 transition-colors"
+    />
+  </div>
 
-            {/* Address (optional) */}
-            <div>
-              <label className="text-xs text-slate-400 font-medium mb-1.5 block">Address (optional)</label>
-              <input name="address" value={form.address} onChange={handleChange} placeholder="Your city or address"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60 transition-colors" />
-            </div>
+  <div>
+    <label className="text-xs text-slate-400 font-medium mb-1.5 block">
+      Gender
+    </label>
+    <select
+      name="gender"
+      value={form.gender}
+      onChange={handleChange}
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-teal-500/60 transition-colors"
+    >
+      <option value="Male" className="bg-slate-900">Male</option>
+      <option value="Female" className="bg-slate-900">Female</option>
+      <option value="Other" className="bg-slate-900">Other</option>
+    </select>
+  </div>
+</div>
+           {/* Address */}
+<div>
+  <label className="text-xs text-slate-400 font-medium mb-1.5 block">
+    Full Address *
+  </label>
+  <input
+    name="address"
+    value={form.address}
+    onChange={handleChange}
+    placeholder="House no., Street, Area"
+    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60 transition-colors"
+  />
+</div>
+
+{/* City + State + Pincode */}
+<div className="grid grid-cols-3 gap-3">
+  <div>
+    <label className="text-xs text-slate-400 font-medium mb-1.5 block">
+      City
+    </label>
+    <input
+      name="city"
+      value={form.city}
+      onChange={handleChange}
+      placeholder="Gorakhpur"
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+    />
+  </div>
+
+  <div>
+    <label className="text-xs text-slate-400 font-medium mb-1.5 block">
+      State
+    </label>
+    <input
+      name="state"
+      value={form.state}
+      onChange={handleChange}
+      placeholder="UP"
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+    />
+  </div>
+
+  <div>
+    <label className="text-xs text-slate-400 font-medium mb-1.5 block">
+      Pincode
+    </label>
+    <input
+      name="pincode"
+      value={form.pincode}
+      onChange={handleChange}
+      placeholder="273001"
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+    />
+  </div>
+</div>
+{/* Emergency Contact */}
+<div className="pt-2">
+  <p className="text-sm font-semibold text-white mb-3">
+    Emergency Contact
+  </p>
+
+  <div className="space-y-3">
+    <input
+      name="emergencyName"
+      value={form.emergencyContact.name}
+      onChange={(e) =>
+        setForm({
+          ...form,
+          emergencyContact: {
+            ...form.emergencyContact,
+            name: e.target.value
+          }
+        })
+      }
+      placeholder="Contact person's name"
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+    />
+
+    <div className="grid grid-cols-2 gap-3">
+      <input
+        name="emergencyPhone"
+        value={form.emergencyContact.phone}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            emergencyContact: {
+              ...form.emergencyContact,
+              phone: e.target.value
+            }
+          })
+        }
+        placeholder="Phone number"
+        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+      />
+
+      <input
+        name="emergencyRelationship"
+        value={form.emergencyContact.relationship}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            emergencyContact: {
+              ...form.emergencyContact,
+              relationship: e.target.value
+            }
+          })
+        }
+        placeholder="Relationship"
+        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+      />
+    </div>
+  </div>
+</div>
+{/* Medical Information */}
+<div className="pt-2 space-y-3">
+  <p className="text-sm font-semibold text-white">
+    Medical Information
+  </p>
+
+  <input
+    name="allergies"
+    value={form.allergies}
+    onChange={handleChange}
+    placeholder="Allergies (e.g. Penicillin, Dust) — if none, write None"
+    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+  />
+
+  <input
+    name="medicalConditions"
+    value={form.medicalConditions}
+    onChange={handleChange}
+    placeholder="Existing medical conditions — if none, write None"
+    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+  />
+
+  <input
+    name="currentMedications"
+    value={form.currentMedications}
+    onChange={handleChange}
+    placeholder="Current medications — if none, write None"
+    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+  />
+
+  <input
+    name="previousSurgeries"
+    value={form.previousSurgeries}
+    onChange={handleChange}
+    placeholder="Previous surgeries — if none, write None"
+    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500/60"
+  />
+</div>
 
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-500 to-teal-400 text-slate-900 font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-60 mt-2">

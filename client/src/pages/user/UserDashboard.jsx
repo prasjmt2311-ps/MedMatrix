@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Stethoscope, Calendar, Video,
+  LayoutDashboard, Stethoscope, Calendar, Video, UserRound,
   Map, PartyPopper, Heart, MessageSquare,
   LogOut, Menu, ChevronRight, Truck, MapPin
 } from 'lucide-react';
 
 import Overview from './sections/Overview';
 import Consultation from './sections/Consultation';
+import toast from 'react-hot-toast';
+import MyHealthProfile from './sections/MyHealthProfile';
 import OnlineConsultation from './sections/OnlineConsultation';
 import Appointments from './sections/Appointments';
 import Telemedicine from './sections/Telemedicine';
@@ -24,42 +27,108 @@ import SOSButton from '../../components/common/SOSButton';
 import NearbyDoctorsMap from '../../components/common/NearbyDoctorsMap';
 
 const navItems = [
-  { id: 'overview',            label: 'Dashboard',           icon: LayoutDashboard },
-  { id: 'nearby-doctors',      label: 'Nearby Doctors',      icon: MapPin },
-  { id: 'consultation',        label: 'Consultation',        icon: Stethoscope },
-  { id: 'online-consultation', label: 'Online Consultation', icon: Stethoscope },
-  { id: 'appointments',        label: 'Appointments',        icon: Calendar },
-  { id: 'telemedicine',        label: 'Telemedicine',        icon: Video },
-  { id: 'transfer',            label: 'Smart Transfer',      icon: Truck },
-  { id: 'reportmap',           label: 'Report & Map',        icon: Map },
-  { id: 'events',              label: 'Events',              icon: PartyPopper },
-  { id: 'wellness',            label: 'Wellness',            icon: Heart },
-  { id: 'feedback',            label: 'Feedback',            icon: MessageSquare },
+  {
+    id: 'profile',
+    label: 'My Health Profile',
+    icon: UserRound
+  },
+  {
+    id: 'overview',
+    label: 'Dashboard',
+    icon: LayoutDashboard
+  },
+  {
+    id: 'nearby-doctors',
+    label: 'Nearby Doctors',
+    icon: MapPin
+  },
+  {
+    id: 'consultation',
+    label: 'Consultation',
+    icon: Stethoscope
+  },
+  {
+    id: 'online-consultation',
+    label: 'Online Consultation',
+    icon: Stethoscope
+  },
+  {
+    id: 'appointments',
+    label: 'Appointments',
+    icon: Calendar
+  },
+  {
+    id: 'telemedicine',
+    label: 'Telemedicine',
+    icon: Video
+  },
+  {
+    id: 'transfer',
+    label: 'Smart Transfer',
+    icon: Truck
+  },
+  {
+    id: 'reportmap',
+    label: 'Report & Map',
+    icon: Map
+  },
+  {
+    id: 'events',
+    label: 'Events',
+    icon: PartyPopper
+  },
+  {
+    id: 'wellness',
+    label: 'Wellness',
+    icon: Heart
+  },
+  {
+    id: 'feedback',
+    label: 'Feedback',
+    icon: MessageSquare
+  }
 ];
 
-const getSection = (active, setActive) => {
-  const sections = {
-    overview: <Overview />,
-    'nearby-doctors': <NearbyDoctorsMap setActive={setActive} />,
-    transfer: <SmartTransfer />,
-    consultation: <Consultation />,
-    'online-consultation': <OnlineConsultation setActive={setActive} />,
-    appointments: <Appointments />,
-    telemedicine: <Telemedicine />,
-    reportmap: <ReportMap />,
-    events: <Events />,
-    wellness: <Wellness />,
-    feedback: <Feedback />,
-  };
-  return sections[active] || <Overview />;
-};
 
 export default function UserDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [active, setActive] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sectionMap = {
+  profile: <MyHealthProfile />,
+  overview: <Overview />,
+  'nearby-doctors': (
+    <NearbyDoctorsMap setActive={setActive} />
+  ),
+  transfer: <SmartTransfer />,
+  consultation: <Consultation />,
+  'online-consultation': (
+    <OnlineConsultation setActive={setActive} />
+  ),
+  appointments: <Appointments />,
+  telemedicine: <Telemedicine />,
+  reportmap: <ReportMap />,
+  events: <Events />,
+  wellness: <Wellness />,
+  feedback: <Feedback />
+};
+  const [patientProfile, setPatientProfile] = useState(null);
+const [profileLoading, setProfileLoading] = useState(true);
+useEffect(() => {
+  const fetchPatientProfile = async () => {
+    try {
+      const { data } = await api.get('/patients/me');
+      setPatientProfile(data);
+    } catch (err) {
+      console.error('PATIENT PROFILE ERROR:', err);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
+  fetchPatientProfile();
+}, []);
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -171,6 +240,44 @@ export default function UserDashboard() {
         </div>
 
         <div className="flex-1 p-6">
+          {/* Patient ID Card */}
+{active === 'overview' && (
+  <div className="mb-6">
+    <div className="bg-gradient-to-r from-teal-500/10 to-violet-500/10 border border-teal-500/20 rounded-2xl p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs text-slate-400 mb-1">
+            Your MedMatrix Patient ID
+          </p>
+
+          {profileLoading ? (
+            <div className="h-7 w-40 bg-white/10 rounded-lg animate-pulse" />
+          ) : (
+            <p className="text-xl font-bold text-white tracking-wider">
+              {patientProfile?.patientId || 'Not available'}
+            </p>
+          )}
+
+          <p className="text-xs text-slate-500 mt-2">
+            Use this ID when interacting with hospitals and appointments.
+          </p>
+        </div>
+
+        {patientProfile?.patientId && (
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(patientProfile.patientId);
+              toast.success('Patient ID copied!');
+            }}
+            className="px-4 py-2 rounded-xl bg-teal-500/15 border border-teal-500/20 text-teal-400 text-sm font-medium hover:bg-teal-500/25 transition-all"
+          >
+            Copy ID
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
@@ -179,7 +286,7 @@ export default function UserDashboard() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.2 }}
             >
-              {getSection(active, setActive)}
+             {sectionMap[active] || <Overview />}
             </motion.div>
           </AnimatePresence>
         </div>

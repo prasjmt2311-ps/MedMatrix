@@ -35,7 +35,9 @@ app.use(express.json());
 // Routes (we'll fill these in Step 3)
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
+app.use('/api/patients', require('./routes/patientRoutes'));
 app.use('/api/hospital', require('./routes/hospitalRoutes'));
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/sos', require('./routes/sosRoutes'));
 app.use('/api/transfer', require('./routes/transferRoutes'));

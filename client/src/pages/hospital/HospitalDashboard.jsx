@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, BedDouble, UserRound, ArrowLeftRight,
+ LayoutDashboard, BedDouble, UserRound, ArrowLeftRight, Search,
   Megaphone, BarChart3, AlertTriangle, LogOut,
   Menu, Bell, Heart, ChevronRight, Video
 } from 'lucide-react';
 import DoctorCall from './sections/DoctorCall';
+import PatientSearch from './sections/PatientSearch';
 import ResourceManager from './sections/ResourceManager';
 import DoctorManagement from './sections/DoctorManagement';
 import PatientTransfer from './sections/PatientTransfer';
@@ -18,6 +19,11 @@ import EmergencyAlerts from './sections/EmergencyAlerts';
 import AIAssistant from '../../components/common/AIAssistant';
 
 const navItems = [
+  {
+  id: 'patient-search',
+  label: 'Search Patient',
+  icon: Search
+},
   { id: 'doctorcall', label: 'Video Consultation', icon: Video },
   { id: 'resources',  label: 'Manage Resources',          icon: BedDouble },
   { id: 'doctors',    label: 'Doctor Management',          icon: UserRound },
@@ -28,6 +34,7 @@ const navItems = [
 ];
 
 const sectionMap = {
+  'patient-search': <PatientSearch />,
   doctorcall: <DoctorCall />,
   resources: <ResourceManager />,
   doctors:   <DoctorManagement />,

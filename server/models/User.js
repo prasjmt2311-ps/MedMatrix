@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+    patientId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -30,6 +36,72 @@ const userSchema = new mongoose.Schema({
   },
   address: { type: String, default: '' },
   role: { type: String, default: 'user' },
+    dateOfBirth: {
+    type: Date,
+    default: null,
+  },
+
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other'],
+    default: 'Other',
+  },
+
+  city: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+
+  state: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+
+  pincode: {
+    type: String,
+    default: '',
+    trim: true,
+  },
+
+  emergencyContact: {
+    name: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    phone: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    relationship: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+  },
+
+  allergies: {
+    type: [String],
+    default: [],
+  },
+
+  medicalConditions: {
+    type: [String],
+    default: [],
+  },
+
+  currentMedications: {
+    type: [String],
+    default: [],
+  },
+
+  previousSurgeries: {
+    type: [String],
+    default: [],
+  },
 }, { timestamps: true });
 
 // Hash password before saving

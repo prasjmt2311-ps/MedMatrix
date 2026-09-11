@@ -1,6 +1,16 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Hospital = require('../models/Hospital');
+const generatePatientId = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let id = 'MM-';
+
+  for (let i = 0; i < 7; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return id;
+};
 
 // Generate JWT
 const generateToken = (id, role) => {
@@ -10,7 +20,24 @@ const generateToken = (id, role) => {
 // @POST /api/auth/register/user
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, bloodGroup, address } = req.body;
+    const {
+  name,
+  email,
+  password,
+  phone,
+  bloodGroup,
+  address,
+  dateOfBirth,
+  gender,
+  city,
+  state,
+  pincode,
+  emergencyContact,
+  allergies,
+  medicalConditions,
+  currentMedications,
+  previousSurgeries
+} = req.body;
 
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ message: 'Please fill all required fields' });
@@ -21,7 +48,27 @@ const registerUser = async (req, res) => {
       return res.status(409).json({ message: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email, password, phone, bloodGroup, address });
+    const patientId = generatePatientId();
+
+const user = await User.create({
+  patientId,
+  name,
+  email,
+  password,
+  phone,
+  bloodGroup,
+  address,
+  dateOfBirth,
+  gender,
+  city,
+  state,
+  pincode,
+  emergencyContact,
+  allergies,
+  medicalConditions,
+  currentMedications,
+  previousSurgeries,
+});
     const token = generateToken(user._id, 'user');
 
     res.status(201).json({
@@ -33,6 +80,7 @@ const registerUser = async (req, res) => {
         email: user.email,
         phone: user.phone,
         bloodGroup: user.bloodGroup,
+        patientId: user.patientId,
       },
     });
     } catch (err) {
