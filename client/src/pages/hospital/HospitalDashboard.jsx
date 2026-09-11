@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import {
- LayoutDashboard, BedDouble, UserRound, ArrowLeftRight, Search,
+  LayoutDashboard, BedDouble, UserRound, ArrowLeftRight, Search,
   Megaphone, BarChart3, AlertTriangle, LogOut,
-  Menu, Bell, Heart, ChevronRight, Video
+  Menu, Bell, Heart, ChevronRight, Video, Calendar
 } from 'lucide-react';
 import DoctorCall from './sections/DoctorCall';
+import Appointments from './sections/Appointments';
 import PatientSearch from './sections/PatientSearch';
 import ResourceManager from './sections/ResourceManager';
 import DoctorManagement from './sections/DoctorManagement';
@@ -20,10 +21,15 @@ import AIAssistant from '../../components/common/AIAssistant';
 
 const navItems = [
   {
-  id: 'patient-search',
-  label: 'Search Patient',
-  icon: Search
-},
+    id: 'patient-search',
+    label: 'Search Patient',
+    icon: Search
+  },
+  { 
+    id: 'appointments', 
+    label: 'Appointments', 
+    icon: Calendar 
+  },
   { id: 'doctorcall', label: 'Video Consultation', icon: Video },
   { id: 'resources',  label: 'Manage Resources',          icon: BedDouble },
   { id: 'doctors',    label: 'Doctor Management',          icon: UserRound },
@@ -35,6 +41,7 @@ const navItems = [
 
 const sectionMap = {
   'patient-search': <PatientSearch />,
+  appointments: <Appointments />,
   doctorcall: <DoctorCall />,
   resources: <ResourceManager />,
   doctors:   <DoctorManagement />,
@@ -47,7 +54,7 @@ const sectionMap = {
 export default function HospitalDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [active, setActive] = useState('resources');
+  const [active, setActive] = useState('appointments');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/'); };
@@ -120,6 +127,7 @@ export default function HospitalDashboard() {
       {/* Ambient orbs */}
       <div className="ambient-orb w-96 h-96 bg-teal-500/8 -top-20 -left-20 fixed" />
       <div className="ambient-orb w-96 h-96 bg-violet-500/8 bottom-0 right-0 fixed" />
+      
       {/* Desktop Sidebar */}
       <div className="sidebar-panel w-60 shrink-0 bg-slate-900/60 border-r border-white/5 fixed left-0 top-0 h-full z-30 hidden lg:block">
         <SidebarContent />

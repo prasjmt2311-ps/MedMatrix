@@ -51,7 +51,6 @@ export default function Appointments() {
     hospitalName: '',
     date: '',
     time: '',
-    fee: '',
     reason: ''
   });
 
@@ -97,10 +96,7 @@ export default function Appointments() {
     }
 
     try {
-      const { data } = await api.post('/appointments', {
-        ...form,
-        fee: Number(form.fee) || 0
-      });
+      const { data } = await api.post('/appointments', form);
 
       setAppointments((prev) => [...prev, data.appointment]);
 
@@ -110,16 +106,13 @@ export default function Appointments() {
         hospitalName: '',
         date: '',
         time: '',
-        fee: '',
         reason: ''
       });
 
       setShowForm(false);
-
       toast.success('Appointment booked successfully');
     } catch (err) {
       console.error('BOOK APPOINTMENT ERROR:', err);
-
       toast.error(
         err.response?.data?.message ||
         'Unable to book appointment'
@@ -187,7 +180,6 @@ export default function Appointments() {
 
             const hasAppt = appointments.some((a) => {
               if (!a.date) return false;
-
               return new Date(a.date).getDate() === day;
             });
 
@@ -253,7 +245,7 @@ export default function Appointments() {
                       ?.split(' ')
                       .map((w) => w[0])
                       .join('')
-                      .slice(1, 3)}
+                      .slice(0, 2) || 'DR'}
                   </div>
 
                   <div>
@@ -280,11 +272,13 @@ export default function Appointments() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-white font-bold text-sm">
-                      ₹{appt.fee}
+                  {appt.fee ? (
+                    <div className="text-right">
+                      <div className="text-white font-bold text-sm">
+                        ₹{appt.fee}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
 
                   <span
                     className={
@@ -404,22 +398,6 @@ export default function Appointments() {
                   />
                 </div>
 
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-400">
-                  Consultation Fee
-                </label>
-
-                <input
-                  type="number"
-                  name="fee"
-                  value={form.fee}
-                  onChange={handleChange}
-                  placeholder="e.g. 500"
-                  min="0"
-                  className="w-full mt-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none"
-                />
               </div>
 
               <div>

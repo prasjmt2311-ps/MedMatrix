@@ -3,7 +3,8 @@ const router = require('express').Router();
 const {
   createAppointment,
   getMyAppointments,
-  getHospitalAppointments
+  getHospitalAppointments,
+  updateAppointmentStatus
 } = require('../controllers/appointmentController');
 
 const {
@@ -11,32 +12,35 @@ const {
   restrictTo
 } = require('../middleware/authMiddleware');
 
-
 // Patient books appointment
 router.post(
   '/',
   protect,
-  restrictTo('user'),
+  restrictTo('user', 'patient'),
   createAppointment
 );
-
 
 // Patient sees own appointments
 router.get(
   '/my',
   protect,
-  restrictTo('user'),
+  restrictTo('user', 'patient'),
   getMyAppointments
 );
 
-
-// Hospital sees appointments
+// Hospital / Admin sees appointments
 router.get(
   '/hospital',
   protect,
-  restrictTo('hospital'),
+  restrictTo('hospital', 'admin', 'hospital_admin', 'doctor'),
   getHospitalAppointments
 );
 
+// Hospital / Admin updates appointment status & fee (Changed to PUT to avoid CORS block)
+router.put(
+  '/:id/status',
+  protect,
+  updateAppointmentStatus
+);
 
 module.exports = router;

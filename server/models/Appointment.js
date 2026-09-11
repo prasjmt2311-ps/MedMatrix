@@ -14,6 +14,14 @@ const appointmentSchema = new mongoose.Schema(
       index: true,
     },
 
+    // Reference to the Doctor's User document in MongoDB
+    doctorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+
     doctorName: {
       type: String,
       required: true,

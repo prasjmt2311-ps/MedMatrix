@@ -5,6 +5,7 @@ const User = require('../models/User');
 const createAppointment = async (req, res) => {
   try {
     const {
+      doctorId,
       doctorName,
       specialty,
       hospitalName,
@@ -32,12 +33,13 @@ const createAppointment = async (req, res) => {
     const appointment = await Appointment.create({
       patient: patient._id,
       patientId: patient.patientId,
+      doctorId: doctorId || null,
       doctorName,
       specialty,
       hospitalName,
       date,
       time,
-      fee: fee || 0,
+      fee: Number(fee) || 0,
       reason
     });
 
@@ -55,7 +57,6 @@ const createAppointment = async (req, res) => {
     });
   }
 };
-
 
 // @GET /api/appointments/my
 const getMyAppointments = async (req, res) => {
@@ -75,6 +76,7 @@ const getMyAppointments = async (req, res) => {
     });
   }
 };
+
 // @GET /api/appointments/hospital
 const getHospitalAppointments = async (req, res) => {
   try {
@@ -94,8 +96,50 @@ const getHospitalAppointments = async (req, res) => {
   }
 };
 
+// @PATCH /api/appointments/:id/status
+const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, fee } = req.body;
+
+    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    const updateFields = {};
+    if (status) updateFields.status = status;
+    if (fee !== undefined && fee !== null && fee !== '') {
+      updateFields.fee = Number(fee);
+    }
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      id,
+      updateFields,
+      { new: true }
+    );
+
+    if (!appointment) {
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    res.json({
+      message: 'Appointment updated successfully',
+      appointment
+    });
+
+  } catch (err) {
+    console.error('UPDATE APPOINTMENT STATUS ERROR:', err);
+    res.status(500).json({
+      message: 'Unable to update appointment status',
+      error: err.message
+    });
+  }
+};
+
 module.exports = {
   createAppointment,
   getMyAppointments,
-  getHospitalAppointments
+  getHospitalAppointments,
+  updateAppointmentStatus
 };
