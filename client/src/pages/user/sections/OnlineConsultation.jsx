@@ -9,7 +9,7 @@ import {
   Search,
 } from 'lucide-react';
 
-const OnlineConsultation = () => {
+const OnlineConsultation = ({ setActive }) => {
   const [problem, setProblem] = useState('');
   const [symptoms, setSymptoms] = useState('');
   const [report, setReport] = useState(null);
@@ -23,43 +23,40 @@ const OnlineConsultation = () => {
     }
 
     setLoading(true);
-try {
-  const response = await fetch(
-    'http://localhost:5000/api/ai/analyze-consultation',
-    {
-      method: 'POST',
-     headers: {
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${localStorage.getItem('uc_token')}`,
-},
-      body: JSON.stringify({
-        problem,
-        symptoms,
-        reportText: report
-          ? `Previous report uploaded: ${report.name}`
-          : '',
-      }),
+    try {
+      const response = await fetch(
+        'http://localhost:5000/api/ai/analyze-consultation',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('uc_token')}`,
+          },
+          body: JSON.stringify({
+            problem,
+            symptoms,
+            reportText: report
+              ? `Previous report uploaded: ${report.name}`
+              : '',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Unable to analyze consultation');
+      }
+
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error('CONSULTATION ERROR:', error);
+      alert(
+        error.message ||
+        'Unable to analyze your consultation. Please try again.'
+      );
+    } finally {
+      setLoading(false);
     }
-  );
-
-  if (!response.ok) {
-    throw new Error('Unable to analyze consultation');
-  }
-
-  const data = await response.json();
-  setResult(data);
-
-} catch (error) {
-  console.error('CONSULTATION ERROR:', error);
-
-  alert(
-    error.message ||
-    'Unable to analyze your consultation. Please try again.'
-  );
-
-} finally {
-  setLoading(false);
-}
   };
 
   return (
@@ -77,8 +74,7 @@ try {
             </h1>
 
             <p className="text-slate-400 text-sm mt-1">
-              Describe your health concern and get a preliminary AI-assisted
-              assessment.
+              Describe your health concern and get a preliminary AI-assisted assessment.
             </p>
           </div>
         </div>
@@ -112,8 +108,7 @@ try {
             </label>
 
             <p className="text-sm text-slate-400 mb-3">
-              Mention your symptoms, duration and anything unusual you have
-              noticed.
+              Mention your symptoms, duration and anything unusual you have noticed.
             </p>
 
             <textarea
@@ -134,8 +129,7 @@ try {
             </label>
 
             <p className="text-sm text-slate-400 mb-4">
-              Already consulted a doctor? Upload your previous report for
-              additional context.
+              Already consulted a doctor? Upload your previous report for additional context.
             </p>
 
             <label className="flex flex-col items-center justify-center min-h-[150px] border border-dashed border-white/20 rounded-xl cursor-pointer hover:border-teal-400 transition">
@@ -167,7 +161,7 @@ try {
             </label>
           </div>
 
-          {/* Analyze */}
+          {/* Analyze Button */}
           <button
             onClick={analyzeCase}
             disabled={loading}
@@ -269,7 +263,7 @@ try {
             </p>
           </div>
 
-          {/* Not satisfied */}
+          {/* Not satisfied - Connected to Nearby Doctors */}
           <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-6 text-center">
             <h3 className="text-xl font-semibold mb-2">
               Not satisfied with this assessment?
@@ -280,8 +274,14 @@ try {
             </p>
 
             <button
-              className="px-6 py-3 rounded-xl bg-violet-500 hover:bg-violet-400 font-semibold flex items-center gap-2 mx-auto"
-              onClick={() => alert('Nearby doctor search will be connected next.')}
+              className="px-6 py-3 rounded-xl bg-violet-500 hover:bg-violet-400 font-semibold flex items-center gap-2 mx-auto text-white transition-all cursor-pointer shadow-lg hover:shadow-violet-500/25"
+              onClick={() => {
+                if (setActive) {
+                  setActive('nearby-doctors');
+                } else {
+                  alert('Opening nearby doctors...');
+                }
+              }}
             >
               <Search size={19} />
               Find Doctors Near Me
